@@ -101,7 +101,7 @@ npx cap open ios
 
 ## 📄 רישיון
 
-פרויקט זה מוגן בזכויות יוצרים © 2024 IsraLove. כל הזכויות שמורות.
+פרויקט זה מוגן בזכויות יוצרים © 2025 IsraLove. כל הזכויות שמורות.
 
 ---
 
