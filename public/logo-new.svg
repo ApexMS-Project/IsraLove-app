@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <radialGradient id="pinkPurpleGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" style="stop-color:#ff6b9d"/>
+            <stop offset="60%" style="stop-color:#e84393"/>
+            <stop offset="100%" style="stop-color:#6c5ce7"/>
+        </radialGradient>
+    </defs>
+    
+    <!-- Perfect circle background - pink to purple gradient -->
+    <circle cx="256" cy="256" r="256" fill="url(#pinkPurpleGrad)"/>
+    
+    <!-- Heart shape - bright red/pink -->
+    <path d="M 256 180
+             C 256 140, 190 120, 160 160
+             C 130 200, 160 250, 256 350
+             C 352 250, 382 200, 352 160
+             C 322 120, 256 140, 256 180 Z" 
+          fill="#ff4757"/>
+    
+    <!-- Letters I and L - white, bold -->
+    <text x="205" y="420" 
+          font-family="Arial, sans-serif" 
+          font-weight="bold" 
+          font-size="62" 
+          fill="white" 
+          text-anchor="middle">I</text>
+    
+    <text x="307" y="420" 
+          font-family="Arial, sans-serif" 
+          font-weight="bold" 
+          font-size="62" 
+          fill="white" 
+          text-anchor="middle">L</text>
+    
+    <!-- Small white decorative dots -->
+    <circle cx="77" cy="102" r="8" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="435" cy="358" r="6" fill="rgba(255,255,255,0.8)"/>
+</svg>

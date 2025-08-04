@@ -1,0 +1,69 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Professional gradient background -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="40%" style="stop-color:#764ba2"/>
+      <stop offset="80%" style="stop-color:#ff6b9d"/>
+      <stop offset="100%" style="stop-color:#e84393"/>
+    </radialGradient>
+    
+    <!-- Heart gradient -->
+    <linearGradient id="heartGrad" x1="20%" y1="20%" x2="80%" y2="80%">
+      <stop offset="0%" style="stop-color:#ff6b9d"/>
+      <stop offset="30%" style="stop-color:#e84393"/>
+      <stop offset="70%" style="stop-color:#ff4757"/>
+      <stop offset="100%" style="stop-color:#d63031"/>
+    </linearGradient>
+    
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    
+    <!-- Heart shadow filter -->
+    <filter id="heartShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="236" fill="url(#bgGrad)" filter="url(#shadow)"/>
+  
+  <!-- Professional heart shape -->
+  <path d="M 256 180
+           C 256 150, 210 130, 175 165
+           C 140 200, 175 240, 256 320
+           C 337 240, 372 200, 337 165
+           C 302 130, 256 150, 256 180 Z" 
+        fill="url(#heartGrad)" 
+        filter="url(#heartShadow)"/>
+  
+  <!-- Modern typography -->
+  <text x="190" y="390" 
+        font-family="Segoe UI, Arial, sans-serif" 
+        font-weight="bold" 
+        font-size="62" 
+        fill="white" 
+        text-anchor="middle"
+        filter="url(#shadow)">I</text>
+  
+  <text x="322" y="390" 
+        font-family="Segoe UI, Arial, sans-serif" 
+        font-weight="bold" 
+        font-size="62" 
+        fill="white" 
+        text-anchor="middle"
+        filter="url(#shadow)">L</text>
+  
+  <!-- Professional sparkles -->
+  <circle cx="130" cy="130" r="6" fill="rgba(255,255,255,0.9)"/>
+  <circle cx="380" cy="150" r="5" fill="rgba(255,255,255,0.8)"/>
+  <circle cx="100" cy="360" r="7" fill="rgba(255,255,255,0.9)"/>
+  <circle cx="410" cy="370" r="5.5" fill="rgba(255,255,255,0.8)"/>
+  <circle cx="80" cy="230" r="4" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="430" cy="250" r="4.5" fill="rgba(255,255,255,0.7)"/>
+  
+  <!-- Subtle highlight -->
+  <ellipse cx="200" cy="180" rx="40" ry="35" fill="rgba(255,255,255,0.15)"/>
+</svg>
