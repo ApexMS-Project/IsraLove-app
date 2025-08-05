@@ -13,6 +13,7 @@ class SocialFeaturesFirebase {
 
   setCurrentUser(user) {
     this.currentUser = user;
+    console.log('Social system updated with user:', user?.firstName);
   }
 
   getCurrentUserId() {
