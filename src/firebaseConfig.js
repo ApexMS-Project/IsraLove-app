@@ -6,13 +6,13 @@ import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyA-3GETuGb66OcmUdPOvrnLzHgPDTbhfU0",
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "isralove-app-8c6b1.firebaseapp.com",
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "isralove-app-8c6b1",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "isralove-app-8c6b1.firebasestorage.app",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "211556765903",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:211556765903:web:bdc806ba44af4ae42c27ba",
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-DL2H7C3GSJ"
+  apiKey: "AIzaSyA-3GETuGb66OcmUdPOvrnLzHgPDTbhfU0",
+  authDomain: "isralove-app-8c6b1.firebaseapp.com",
+  projectId: "isralove-app-8c6b1",
+  storageBucket: "isralove-app-8c6b1.firebasestorage.app",
+  messagingSenderId: "211556765903",
+  appId: "1:211556765903:web:bdc806ba44af4ae42c27ba",
+  measurementId: "G-DL2H7C3GSJ"
 };
 
 // Initialize Firebase
