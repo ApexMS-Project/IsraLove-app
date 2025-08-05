@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Auth from './Auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from './firebaseConfig';
+import firebaseDB from './FirebaseDatabase';
+import socialSystem from './SocialFeaturesFirebase';
+import AuthFirebase from './AuthFirebase';
 import ContentModeration, { createModerator } from './ContentModeration';
 import PremiumUI from './PremiumUI';
 import PremiumSystem from './PremiumSystem';
@@ -8,7 +12,6 @@ import MatchingSystem from './MatchingSystem';
 import SafetyUI from './SafetyUI';
 import SafetySystem from './SafetySystem';
 import SocialUI from './SocialUI';
-import SocialFeatures from './SocialFeatures';
 import ThemeSelector from './ThemeSelector';
 import UIEnhancements from './UIEnhancements';
 import AdminDashboard from './AdminDashboard';
@@ -58,7 +61,6 @@ const App = () => {
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [safetySystem] = useState(new SafetySystem());
   const [showSocialModal, setShowSocialModal] = useState(false);
-  const [socialSystem] = useState(new SocialFeatures()); 
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminSystem] = useState(new AdminSystem());
   const [isAdmin, setIsAdmin] = useState(false);
@@ -66,76 +68,76 @@ const App = () => {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [uiEnhancements] = useState(new UIEnhancements());
 
-
   const cardRef = useRef(null);
 
   // Initialize content moderator
   const moderator = createModerator();
 
-// Initialize UI enhancements
-useEffect(() => {
-  uiEnhancements.init();
-}, [uiEnhancements]);
+  // Initialize UI enhancements
+  useEffect(() => {
+    uiEnhancements.init();
+  }, [uiEnhancements]);
 
   // Premium feature checks
-const canUseLike = () => {
-  return premiumSystem.useFeature('like');
-};
+  const canUseLike = () => {
+    return premiumSystem.useFeature('like');
+  };
 
-const canUseSuperLike = () => {
-  return premiumSystem.useFeature('superLike');
-};
+  const canUseSuperLike = () => {
+    return premiumSystem.useFeature('superLike');
+  };
 
-const openPremiumModal = () => {
-  setShowPremiumModal(true);
-};
+  const openPremiumModal = () => {
+    setShowPremiumModal(true);
+  };
 
-const openQuestionsModal = () => {
-  setShowQuestionsModal(true);
-};
+  const openQuestionsModal = () => {
+    setShowQuestionsModal(true);
+  };
 
-const openSafetyModal = (targetUserId = null, context = 'general') => {
-  setSafetyContext({ targetUserId, context });
-  setShowSafetyModal(true);
-};
+  const openSafetyModal = (targetUserId = null, context = 'general') => {
+    setSafetyContext({ targetUserId, context });
+    setShowSafetyModal(true);
+  };
 
-const openSocialModal = () => {
-  setShowSocialModal(true);
-};
+  const openSocialModal = () => {
+    setShowSocialModal(true);
+  };
 
-const checkAdminAccess = () => {
-  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  
-  // בדיקה פשוטה למנהל
-  if (currentUser.email === 'yossidanilovv@gmail.com') {
-    // שמירת סטטוס מנהל
-    localStorage.setItem('isAdmin', 'true');
-    return true;
-  }
-  
-  return false;
-};
+  const checkAdminAccess = () => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    
+    // Admin check
+    if (currentUser.email === 'yossidanilov96@gmail.com') {
+      localStorage.setItem('isAdmin', 'true');
+      return true;
+    }
+    
+    return false;
+  };
 
-const openAdminModal = () => {
-  console.log('Opening admin modal...');
-  setIsAdmin(true);
-  setShowAdminModal(true);
-  showNotification('דשבורד מנהלים נפתח! 👑');
-};
+  const openAdminModal = () => {
+    console.log('Opening admin modal...');
+    setIsAdmin(true);
+    setShowAdminModal(true);
+    showNotification('דשבורד מנהלים נפתח! 👑');
+  };
 
-const reportUser = (userId) => {
-  openSafetyModal(userId, 'report');
-};
+  const reportUser = (userId) => {
+    openSafetyModal(userId, 'report');
+  };
 
-const blockUser = (userId) => {
-  const success = safetySystem.blockUser(user.id, userId, 'מחסום מהפרופיל');
-  if (success) {
-    showNotification('המשתמש נחסם בהצלחה');
-  }
-};
-const openThemeModal = () => {
-  setShowThemeModal(true);
-};
+  const blockUser = (userId) => {
+    const success = safetySystem.blockUser(user.id, userId, 'מחסום מהפרופיל');
+    if (success) {
+      showNotification('המשתמש נחסם בהצלחה');
+    }
+  };
+
+  const openThemeModal = () => {
+    setShowThemeModal(true);
+  };
+
   // Real profiles data - Empty for real users only
   const sampleProfiles = [];
 
@@ -162,31 +164,69 @@ const openThemeModal = () => {
     });
   };
 
-  // Check authentication on app load
+  // Check Firebase authentication on app load
   useEffect(() => {
-    const checkAuth = () => {
-      const currentUser = localStorage.getItem('currentUser');
-      if (currentUser) {
-        const userData = JSON.parse(currentUser);
-        setUser(userData);
-        
-        // Load photos from multiple sources for reliability
-        const savedPhotos = localStorage.getItem('userPhotos');
-        if (savedPhotos) {
-          setUserPhotos(JSON.parse(savedPhotos));
-        } else if (userData.photos) {
-          setUserPhotos(userData.photos);
-        } else {
-          setUserPhotos([]);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsLoading(true);
+      
+      if (firebaseUser) {
+        try {
+          // Get user data from Firestore
+          const userData = await firebaseDB.getUserByEmail(firebaseUser.email);
+          
+          if (userData) {
+            setUser(userData);
+            
+            // Load user photos
+            setUserPhotos(userData.photos || []);
+            
+            // Load user settings
+            setSettings({
+              firstName: userData.firstName || '',
+              lastName: userData.lastName || '',
+              city: userData.city || 'תל אביב',
+              bio: userData.bio || '',
+              lookingFor: userData.lookingFor || 'women',
+              ageRange: userData.settings?.ageRange || { min: 22, max: 35 },
+              searchRadius: userData.settings?.searchRadius || 50,
+              privacy: userData.settings?.privacy || {
+                showOnlyToLiked: true,
+                messageNotifications: true,
+                matchNotifications: false
+              }
+            });
+            
+            // Clear fake data when user logs in
+            clearFakeData();
+            
+            // Update social system with user data
+            socialSystem.setCurrentUser(userData);
+            
+            // Subscribe to real-time user updates
+            firebaseDB.subscribeToUser(userData.id, (updatedUserData) => {
+              if (updatedUserData) {
+                setUser(updatedUserData);
+                setUserPhotos(updatedUserData.photos || []);
+                // Update social system with updated user data
+                socialSystem.setCurrentUser(updatedUserData);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
         }
+      } else {
+        setUser(null);
+        setUserPhotos([]);
         
-        // Clear fake data when user logs in
-        clearFakeData();
+        // Unsubscribe from all Firebase listeners when user logs out
+        firebaseDB.unsubscribeAll();
       }
+      
       setIsLoading(false);
-    };
+    });
 
-    checkAuth();
+    return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
   // Initialize data when user is authenticated
@@ -211,15 +251,64 @@ const openThemeModal = () => {
       setUserPhotos([]);
     }
     
+    // Load user settings
+    setSettings({
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      city: userData.city || 'תל אביב',
+      bio: userData.bio || '',
+      lookingFor: userData.lookingFor || 'women',
+      ageRange: userData.ageRange || { min: 22, max: 35 },
+      searchRadius: userData.searchRadius || 50,
+      privacy: userData.privacy || {
+        showOnlyToLiked: true,
+        messageNotifications: true,
+        matchNotifications: false
+      }
+    });
+    
     setCurrentPage('home');
   };
 
   // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setUser(null);
-    setCurrentPage('home');
-    setUserPhotos([]);
+  const handleLogout = async () => {
+    try {
+      // Save current user's data before logout
+      if (user && user.id) {
+        // Update user data in Firebase
+        await firebaseDB.updateUser(user.id, {
+          photos: userPhotos,
+          settings: {
+            ageRange: settings.ageRange,
+            searchRadius: settings.searchRadius,
+            privacy: settings.privacy
+          },
+          firstName: settings.firstName,
+          lastName: settings.lastName,
+          city: settings.city,
+          bio: settings.bio,
+          lookingFor: settings.lookingFor
+        });
+      }
+      
+      // Sign out from Firebase
+      await signOut(auth);
+      
+      // Clear local state
+      setUser(null);
+      setUserPhotos([]);
+      setCurrentPage('home');
+      
+      // Unsubscribe from all Firebase listeners
+      firebaseDB.unsubscribeAll();
+      
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Force logout even if Firebase logout fails
+      setUser(null);
+      setUserPhotos([]);
+      setCurrentPage('home');
+    }
   };
 
   // Page navigation
@@ -496,61 +585,72 @@ const openThemeModal = () => {
         continue;
       }
       
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageDataUrl = e.target.result;
+      try {
+        showNotification('מעלה תמונה...');
         
-        // Moderate image before adding
-        const moderationResult = await moderator.moderateImage(file, imageDataUrl);
-        
-        if (!moderationResult.isAppropriate) {
-          showNotification(`תמונה נדחתה: ${moderationResult.reason}`);
-          return;
-        }
-        
-        if (moderationResult.warning) {
-          showNotification(`⚠️ ${moderationResult.warning}`);
-        }
-        
-        const newPhoto = {
-          id: Date.now() + Math.random(),
-          url: imageDataUrl,
-          file: file,
-          moderationStatus: 'approved'
+        // Moderate image before uploading
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const imageDataUrl = e.target.result;
+          const moderationResult = await moderator.moderateImage(file, imageDataUrl);
+          
+          if (!moderationResult.isAppropriate) {
+            showNotification(`תמונה נדחתה: ${moderationResult.reason}`);
+            return;
+          }
+          
+          if (moderationResult.warning) {
+            showNotification(`⚠️ ${moderationResult.warning}`);
+          }
+          
+          try {
+            // Upload to Firebase Storage
+            const photoData = await firebaseDB.uploadPhoto(file, user.id, 'profile');
+            
+            const newPhoto = {
+              id: photoData.id,
+              url: photoData.url,
+              moderationStatus: 'approved'
+            };
+            
+            const updatedPhotos = [...userPhotos, newPhoto];
+            setUserPhotos(updatedPhotos);
+            
+            // Update user in Firebase Firestore
+            await firebaseDB.updateUser(user.id, {
+              photos: updatedPhotos
+            });
+            
+            showNotification('תמונה הועלתה בהצלחה! ✅');
+          } catch (uploadError) {
+            console.error('Error uploading photo:', uploadError);
+            showNotification('שגיאה בהעלאת התמונה: ' + uploadError.message);
+          }
         };
-        
-        setUserPhotos(prev => [...prev, newPhoto]);
-        
-        // Update user data in localStorage
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (!currentUser.photos) currentUser.photos = [];
-        currentUser.photos.push(newPhoto);
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        setUser(currentUser);
-        
-        // Also save photos separately for backup
-        const updatedPhotos = [...userPhotos, newPhoto];
-        localStorage.setItem('userPhotos', JSON.stringify(updatedPhotos));
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Error processing photo:', error);
+        showNotification('שגיאה בעיבוד התמונה');
+      }
     }
   };
 
   // Remove photo function
-  const removePhoto = (photoId) => {
-    const updatedPhotos = userPhotos.filter(photo => photo.id !== photoId);
-    setUserPhotos(updatedPhotos);
-    
-    // Update user data in localStorage
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    currentUser.photos = updatedPhotos;
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    setUser(currentUser);
-    
-    // Also update backup
-    localStorage.setItem('userPhotos', JSON.stringify(updatedPhotos));
-    
-    showNotification('תמונה הוסרה בהצלחה');
+  const removePhoto = async (photoId) => {
+    try {
+      const updatedPhotos = userPhotos.filter(photo => photo.id !== photoId);
+      setUserPhotos(updatedPhotos);
+      
+      // Update user in Firebase Firestore
+      await firebaseDB.updateUser(user.id, {
+        photos: updatedPhotos
+      });
+      
+      showNotification('תמונה הוסרה בהצלחה');
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      showNotification('שגיאה בהסרת התמונה');
+    }
   };
 
 const showNotification = (message, type = 'info') => {
@@ -607,7 +707,7 @@ const showNotification = (message, type = 'info') => {
 
   // Show authentication screen if not logged in
   if (!user) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />;
+    return <AuthFirebase onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (
@@ -882,14 +982,14 @@ const showNotification = (message, type = 'info') => {
                 <div className="profile-content">
                   <h1 className="profile-name">{user.firstName} {user.lastName}</h1>
                   <p className="profile-age">
-                    גיל {new Date().getFullYear() - new Date(user.birthDate).getFullYear()} • {user.city}
+                    גיל {user.age || new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear()} • {user.city}
                   </p>
                   
                   <div className="profile-section">
                     <h3 className="section-title">התמונות שלי ({userPhotos.length}/5)</h3>
                     <div className="photo-grid">
                       {userPhotos.map((photo, index) => (
-                        <div key={photo.id} className="photo-item">
+                        <div key={photo.id || index} className="photo-item">
                           <img src={photo.url} alt={`תמונה ${index + 1}`} />
                           <button 
                             className="remove-photo-btn"
@@ -1038,7 +1138,7 @@ const showNotification = (message, type = 'info') => {
                   </div>
                   
                   <div className="form-group">
-                    <label className="form-label">טווח גילאים *</label>
+                    <label className="form-label">טווח גילאים * (כרגע: {settings.ageRange?.min || 22}-{settings.ageRange?.max || 35})</label>
                     <div className="range-group">
                       <div className="age-input-group">
                         <label className="age-label">מגיל:</label>
@@ -1050,7 +1150,7 @@ const showNotification = (message, type = 'info') => {
                             ...settings, 
                             ageRange: {...settings.ageRange, min: parseInt(e.target.value)}
                           })}
-                          placeholder="18" 
+                          placeholder="גיל מינימום (18)" 
                           min="18"
                           max="100"
                         />
@@ -1065,7 +1165,7 @@ const showNotification = (message, type = 'info') => {
                             ...settings, 
                             ageRange: {...settings.ageRange, max: parseInt(e.target.value)}
                           })}
-                          placeholder="50" 
+                          placeholder="גיל מקסימום (100)" 
                           min="18"
                           max="100"
                         />
@@ -1075,8 +1175,13 @@ const showNotification = (message, type = 'info') => {
                   </div>
                   
                   <div className="form-group">
-                    <label className="form-label">רדיוס חיפוש *</label>
+                    <label className="form-label">רדיוס חיפוש * (כרגע: {settings.searchRadius || 50} ק"מ)</label>
                     <div className="range-slider-container">
+                      <div className="range-labels">
+                        <span>1 ק"מ</span>
+                        <span className="range-current">🎯 {settings.searchRadius || 50} ק"מ</span>
+                        <span>100 ק"מ</span>
+                      </div>
                       <input 
                         type="range" 
                         className="form-input range-slider" 
@@ -1147,16 +1252,33 @@ const showNotification = (message, type = 'info') => {
                   </div>
                 </div>
 
-                <button className="save-btn" onClick={() => {
-                  // Save settings to localStorage
-                  localStorage.setItem('userSettings', JSON.stringify(settings));
-                  
-                  // Update user data
-                  const updatedUser = { ...user, ...settings };
-                  localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-                  setUser(updatedUser);
-                  
-                  showNotification('הגדרות נשמרו בהצלחה!');
+                <button className="save-btn" onClick={async () => {
+                  try {
+                    if (user && user.id) {
+                      // Update user data in Firebase
+                      await firebaseDB.updateUser(user.id, {
+                        firstName: settings.firstName,
+                        lastName: settings.lastName,
+                        city: settings.city,
+                        bio: settings.bio,
+                        lookingFor: settings.lookingFor,
+                        settings: {
+                          ageRange: settings.ageRange,
+                          searchRadius: settings.searchRadius,
+                          privacy: settings.privacy
+                        }
+                      });
+                      
+                      // Update local user state
+                      const updatedUser = { ...user, ...settings };
+                      setUser(updatedUser);
+                      
+                      showNotification('הגדרות נשמרו בהצלחה ב-Firebase! 🔥');
+                    }
+                  } catch (error) {
+                    console.error('Error saving settings:', error);
+                    showNotification('שגיאה בשמירת ההגדרות, נסה שוב');
+                  }
                 }}>שמור שינויים</button>
               </div>
             </div>
