@@ -8,7 +8,7 @@ import { auth } from './firebaseConfig';
 import firebaseDB from './FirebaseDatabase';
 import './Auth.css';
 
-const AuthFirebase = ({ onLogin, showNotification }) => {
+const AuthFirebase = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -20,6 +20,7 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
     lookingFor: 'women'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,11 +28,17 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
       ...prev,
       [name]: value
     }));
+    setError(''); // Clear error when user types
+  };
+
+  const showNotification = (message) => {
+    alert(message); // Simple notification for now
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
@@ -42,9 +49,9 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
       
       if (userData) {
         showNotification('התחברת בהצלחה! 🎉');
-        onLogin(userData);
+        onAuthSuccess(userData);
       } else {
-        showNotification('שגיאה בטעינת נתוני המשתמש');
+        setError('שגיאה בטעינת נתוני המשתמש');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -63,11 +70,14 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
         case 'auth/too-many-requests':
           errorMessage = 'יותר מדי ניסיונות התחברות. נסה שוב מאוחר יותר';
           break;
+        case 'auth/invalid-credential':
+          errorMessage = 'פרטי התחברות לא נכונים';
+          break;
         default:
           errorMessage = error.message;
       }
       
-      showNotification(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -76,10 +86,11 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     // Validation
     if (!formData.firstName || !formData.lastName || !formData.dateOfBirth) {
-      showNotification('אנא מלא את כל השדות הנדרשים');
+      setError('אנא מלא את כל השדות הנדרשים');
       setIsLoading(false);
       return;
     }
@@ -87,7 +98,7 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
     // Age validation
     const birthDate = new Date(formData.dateOfBirth);
     const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
+    let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
@@ -95,7 +106,7 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
     }
 
     if (age < 18) {
-      showNotification('חייב להיות מעל גיל 18');
+      setError('חייב להיות מעל גיל 18');
       setIsLoading(false);
       return;
     }
@@ -131,7 +142,7 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
       const createdUser = await firebaseDB.createUser(userData);
       
       showNotification('נרשמת בהצלחה! 🎉');
-      onLogin(createdUser);
+      onAuthSuccess(createdUser);
     } catch (error) {
       console.error('Registration error:', error);
       let errorMessage = 'שגיאה ברישום';
@@ -150,19 +161,9 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
           errorMessage = error.message;
       }
       
-      showNotification(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      showNotification('התנתקת בהצלחה');
-    } catch (error) {
-      console.error('Logout error:', error);
-      showNotification('שגיאה בהתנתקות');
     }
   };
 
@@ -172,6 +173,19 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
         <h2 className="auth-title">
           {isLogin ? 'התחברות ל-IsraLove 💕' : 'הצטרפות ל-IsraLove 💕'}
         </h2>
+        
+        {error && (
+          <div className="error-message" style={{
+            background: '#ff6b6b',
+            color: 'white',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '15px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
         
         <form onSubmit={isLogin ? handleLogin : handleRegister} className="auth-form">
           <input
@@ -267,7 +281,10 @@ const AuthFirebase = ({ onLogin, showNotification }) => {
         <p className="auth-switch">
           {isLogin ? 'אין לך חשבון?' : 'יש לך כבר חשבון?'}
           <button 
-            onClick={() => setIsLogin(!isLogin)} 
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }} 
             className="auth-link"
             disabled={isLoading}
           >
