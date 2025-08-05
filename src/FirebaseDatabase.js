@@ -12,7 +12,8 @@ import {
   limit,
   onSnapshot,
   serverTimestamp,
-  increment
+  increment,
+  Timestamp
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -107,10 +108,13 @@ class FirebaseDatabase {
   // Story Management
   async createStory(storyData) {
     try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      
       const docRef = await addDoc(collection(db, 'stories'), {
         ...storyData,
-        createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+        createdAt: Timestamp.fromDate(now),
+        expiresAt: Timestamp.fromDate(expiresAt),
         likes: [],
         replies: [],
         views: []
@@ -124,7 +128,7 @@ class FirebaseDatabase {
 
   async getStories() {
     try {
-      const now = new Date();
+      const now = Timestamp.fromDate(new Date());
       const q = query(
         collection(db, 'stories'),
         where('expiresAt', '>', now),
@@ -139,7 +143,7 @@ class FirebaseDatabase {
       }));
     } catch (error) {
       console.error('Error getting stories:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -184,7 +188,7 @@ class FirebaseDatabase {
           id: Date.now().toString(),
           userId,
           text: replyText,
-          timestamp: new Date()
+          timestamp: Timestamp.fromDate(new Date())
         };
         
         const updatedReplies = [...replies, newReply];
@@ -228,11 +232,14 @@ class FirebaseDatabase {
       const tomorrow = new Date(today);
       tomorrow.setDate(today.getDate() + 1);
       
+      const todayTimestamp = Timestamp.fromDate(today);
+      const tomorrowTimestamp = Timestamp.fromDate(tomorrow);
+      
       const q = query(
         collection(db, 'stories'),
         where('userId', '==', userId),
-        where('createdAt', '>=', today),
-        where('createdAt', '<', tomorrow)
+        where('createdAt', '>=', todayTimestamp),
+        where('createdAt', '<', tomorrowTimestamp)
       );
       
       const querySnapshot = await getDocs(q);
@@ -246,7 +253,7 @@ class FirebaseDatabase {
   // Cleanup expired stories
   async cleanupExpiredStories() {
     try {
-      const now = new Date();
+      const now = Timestamp.fromDate(new Date());
       const q = query(
         collection(db, 'stories'),
         where('expiresAt', '<=', now)
